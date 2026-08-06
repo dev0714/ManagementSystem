@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { Countdown } from '@/components/ui/Countdown';
 import { Dot, FlagCard, KpiRow, ProgressBar, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { relative, toneOf } from '@/lib/format';
@@ -22,7 +23,7 @@ export default async function JkDashboardPage() {
   const [board, times, sitesRes, shiftsRes, alertsRes, assetsRes] = await Promise.all([
     kpis(t, isManager ? 'jk_manager' : 'jk'),
     prayerTimes(t),
-    client.from('sites').select('id, name, suburb, manager_id').eq('tenant_id', t).order('name'),
+    client.from('sites').select('id, name, suburb, lat, lng, geofence_m, manager_id').eq('tenant_id', t).order('name'),
     client.from('shifts').select('site_id, cleaner_name, clock_in_at, selfie_status, checklist_state, status, tone').eq('tenant_id', t),
     client
       .from('alerts')
@@ -102,6 +103,8 @@ export default async function JkDashboardPage() {
             </SectionCard>
           ) : null}
 
+          {!isManager ? <AddRecord resource="site" tenantId={session.tenantId} /> : null}
+
           <SectionCard title={isManager ? 'My cleaners' : 'Site readiness'} flush>
             <div className="table__scroll">
               <table className="table">
@@ -112,6 +115,7 @@ export default async function JkDashboardPage() {
                     <th>Selfie</th>
                     <th>Checklist</th>
                     <th>Status</th>
+                    {!isManager ? <th /> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -133,12 +137,23 @@ export default async function JkDashboardPage() {
                         <td>
                           <StatusPill tone={toneOf(sh?.tone)}>{sh?.status ?? 'No shift'}</StatusPill>
                         </td>
+                        {!isManager ? (
+                          <td>
+                            <RowActions
+                              resource="site"
+                              tenantId={session.tenantId}
+                              id={s.id as string}
+                              name={s.name as string}
+                              values={s as unknown as Record<string, unknown>}
+                            />
+                          </td>
+                        ) : null}
                       </tr>
                     );
                   })}
                   {!sites.length ? (
                     <tr>
-                      <td colSpan={5}>
+                      <td colSpan={6}>
                         <div className="empty">No sites assigned to you.</div>
                       </td>
                     </tr>

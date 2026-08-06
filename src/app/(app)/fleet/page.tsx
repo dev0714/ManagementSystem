@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { Dot, FlagCard, KpiRow, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { relative, toneOf } from '@/lib/format';
@@ -18,7 +19,7 @@ export default async function FleetDashboardPage() {
 
   const [board, expiries, alerts, chart, rules] = await Promise.all([
     kpis(t, 'fleet'),
-    client.from('expiries').select('item, who, due_label, status, tone').eq('tenant_id', t).order('sort_order'),
+    client.from('expiries').select('id, item, who, due_label, status, tone, sort_order').eq('tenant_id', t).order('sort_order'),
     client
       .from('alerts')
       .select('severity, title, detail, created_at')
@@ -100,7 +101,11 @@ export default async function FleetDashboardPage() {
       </div>
 
       <div className="grid grid--main">
-        <SectionCard title="Expiring in the next 30 days" flush>
+        <SectionCard
+          title="Expiring in the next 30 days"
+          action={<AddRecord resource="expiry" tenantId={session.tenantId} label="expiry" />}
+          flush
+        >
           <div className="table__scroll">
             <table className="table">
               <thead>
@@ -109,6 +114,7 @@ export default async function FleetDashboardPage() {
                   <th>Who / what</th>
                   <th>Due</th>
                   <th>Status</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -119,6 +125,15 @@ export default async function FleetDashboardPage() {
                     <td className="num">{e.due_label as string}</td>
                     <td>
                       <StatusPill tone={toneOf(e.tone)}>{e.status as string}</StatusPill>
+                    </td>
+                    <td>
+                      <RowActions
+                        resource="expiry"
+                        tenantId={session.tenantId}
+                        id={e.id as string}
+                        name={e.item as string}
+                        values={e as unknown as Record<string, unknown>}
+                      />
                     </td>
                   </tr>
                 ))}

@@ -1,4 +1,5 @@
 import { FilterChips, ProgressBar, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { toneOf } from '@/lib/format';
@@ -32,6 +33,8 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
         <div className="spacer" />
         <span className="muted">{vehicles.length} vehicles</span>
       </div>
+
+      <AddRecord resource="vehicle" tenantId={session.tenantId} />
 
       <div className="grid grid--3">
         {vehicles.map((v) => {
@@ -78,8 +81,17 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
               </div>
               <ProgressBar pct={pct} color={barColor} />
 
-              <div className="muted" style={{ marginTop: 10 }}>
-                Last wash: {v.wash as string}
+              <div className="row" style={{ marginTop: 10 }}>
+                <span className="muted" style={{ flex: 1 }}>
+                  Last wash: {v.wash as string}
+                </span>
+                <RowActions
+                  resource="vehicle"
+                  tenantId={session.tenantId}
+                  id={v.id as string}
+                  name={v.plate as string}
+                  values={v as unknown as Record<string, unknown>}
+                />
               </div>
             </div>
           );

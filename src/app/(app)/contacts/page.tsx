@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Avatar, Dot, FieldTile, FilterChips, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireCrm } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { relative, toneOf } from '@/lib/format';
@@ -64,7 +65,7 @@ export default async function ContactsPage({
     ? await Promise.all([
         client
           .from('contact_fields')
-          .select('label, value')
+          .select('id, label, value, sort_order, contact_id')
           .eq('tenant_id', session.tenantId)
           .eq('contact_id', selected.id)
           .order('sort_order'),
@@ -90,6 +91,8 @@ export default async function ContactsPage({
             <span className="muted">{contacts.length} contacts</span>
           </div>
 
+          <AddRecord resource="contact" tenantId={session.tenantId} />
+
           <SectionCard flush>
             <div className="table__scroll">
               <table className="table">
@@ -99,6 +102,7 @@ export default async function ContactsPage({
                     <th>Type</th>
                     <th>Linked to</th>
                     <th>Status</th>
+                    <th />
                   </tr>
                 </thead>
                 <tbody>
@@ -122,11 +126,20 @@ export default async function ContactsPage({
                       <td>
                         <StatusPill tone={toneOf(c.tone)}>{c.status}</StatusPill>
                       </td>
+                      <td>
+                        <RowActions
+                          resource="contact"
+                          tenantId={session.tenantId}
+                          id={c.id}
+                          name={c.name}
+                          values={c as unknown as Record<string, unknown>}
+                        />
+                      </td>
                     </tr>
                   ))}
                   {!contacts.length ? (
                     <tr>
-                      <td colSpan={4}>
+                      <td colSpan={5}>
                         <div className="empty">No {filter === 'All' ? '' : filter.toLowerCase()} contacts yet.</div>
                       </td>
                     </tr>
@@ -153,6 +166,15 @@ export default async function ContactsPage({
                 {(fieldsRes.data ?? []).map((f) => (
                   <FieldTile key={f.label as string} label={f.label as string} value={f.value as string} />
                 ))}
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <AddRecord
+                  resource="contact_field"
+                  tenantId={session.tenantId}
+                  label="detail field"
+                  defaults={{ contact_id: selected.id }}
+                />
               </div>
             </SectionCard>
 

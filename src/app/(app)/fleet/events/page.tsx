@@ -1,4 +1,5 @@
 import { Dot, SectionCard } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 
@@ -11,7 +12,7 @@ export default async function FleetEventsPage() {
 
   const { data } = await db()
     .from('fleet_events')
-    .select('id, title, detail, when_label, day_of_month, color')
+    .select('id, title, detail, when_label, day_of_month, color, sort_order')
     .eq('tenant_id', session.tenantId)
     .order('sort_order');
 
@@ -71,6 +72,9 @@ export default async function FleetEventsPage() {
         </SectionCard>
 
         <SectionCard title="Coming up">
+          <div style={{ marginBottom: 14 }}>
+            <AddRecord resource="fleet_event" tenantId={session.tenantId} label="event" />
+          </div>
           <div className="feed">
             {events.map((e) => (
               <div className="feed__row" key={e.id as string}>
@@ -80,6 +84,13 @@ export default async function FleetEventsPage() {
                   <div className="feed__detail">{e.detail as string}</div>
                 </div>
                 <span className="feed__when">{e.when_label as string}</span>
+                <RowActions
+                  resource="fleet_event"
+                  tenantId={session.tenantId}
+                  id={e.id as string}
+                  name={e.title as string}
+                  values={e as unknown as Record<string, unknown>}
+                />
               </div>
             ))}
             {!events.length ? <div className="empty">Nothing scheduled.</div> : null}

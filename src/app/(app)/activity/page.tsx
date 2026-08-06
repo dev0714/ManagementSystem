@@ -1,4 +1,5 @@
 import { Dot, SectionCard, SourceBadge, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireCrm } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { SEVERITY_DOT, relative, toneOf } from '@/lib/format';
@@ -51,9 +52,13 @@ export default async function ActivityPage() {
         </SectionCard>
 
         <SectionCard title="My tasks" subtitle="Tick to complete">
+          <div style={{ marginBottom: 14 }}>
+            <AddRecord resource="task" tenantId={session.tenantId} />
+          </div>
           <div className="stack">
             {(tasks.data ?? []).map((t) => (
-              <form action={toggleTaskAction} key={t.id as string}>
+              <div key={t.id as string}>
+              <form action={toggleTaskAction}>
                 <input type="hidden" name="id" value={t.id as string} />
                 <input type="hidden" name="done" value={String(t.is_done)} />
                 <button
@@ -81,6 +86,16 @@ export default async function ActivityPage() {
                   <StatusPill tone={toneOf(t.tone)}>{t.due_label as string}</StatusPill>
                 </button>
               </form>
+              <div style={{ padding: '6px 0 0 34px' }}>
+                <RowActions
+                  resource="task"
+                  tenantId={session.tenantId}
+                  id={t.id as string}
+                  name={t.title as string}
+                  values={t as unknown as Record<string, unknown>}
+                />
+              </div>
+              </div>
             ))}
             {!(tasks.data ?? []).length ? <div className="empty">No tasks assigned.</div> : null}
           </div>

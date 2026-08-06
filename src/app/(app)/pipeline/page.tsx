@@ -1,4 +1,5 @@
 import { Avatar, Dot, KpiRow, SectionCard, SourceBadge } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireCrm } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { zar, zarCompact } from '@/lib/format';
@@ -32,6 +33,8 @@ export default async function PipelinePage() {
   return (
     <div className="page">
       <KpiRow kpis={board} columns={4} />
+
+      <AddRecord resource="deal" tenantId={session.tenantId} />
 
       <SectionCard title="Pipeline board" subtitle="New business across the group">
         <div className="board" style={{ gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))` }}>
@@ -67,6 +70,13 @@ export default async function PipelinePage() {
                       <div className="spacer" />
                       <Avatar initials={d.owner_initials as string} size="sm" />
                     </div>
+                    <RowActions
+                      resource="deal"
+                      tenantId={session.tenantId}
+                      id={d.id as string}
+                      name={d.title as string}
+                      values={d as unknown as Record<string, unknown>}
+                    />
                   </div>
                 ))}
 

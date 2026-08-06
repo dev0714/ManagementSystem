@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 
 import { Dot, FilterChips, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { toneOf } from '@/lib/format';
@@ -103,7 +104,7 @@ export default async function MaintenancePage({
 
   let query = client
     .from('fault_jobs')
-    .select('id, ref, category, title, property_label, tenant_label, team, team_initials, stage, sla_label, tone')
+    .select('id, ref, category, title, property_id, property_label, tenant_label, team, team_initials, stage, sla_label, tone')
     .eq('tenant_id', session.tenantId)
     .order('created_at', { ascending: false });
   if (filter !== 'All faults') query = query.eq('category', filter);
@@ -126,6 +127,8 @@ export default async function MaintenancePage({
   return (
     <div className="page">
       <FilterChips options={FILTERS} active={filter} basePath="/property/maintenance" />
+
+      <AddRecord resource="fault" tenantId={session.tenantId} label="fault job" />
 
       <SectionCard title="Fault board" subtitle="Auto-dispatch by category, then drive to sign-off">
         <div className="board" style={{ gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))` }}>
@@ -175,6 +178,13 @@ export default async function MaintenancePage({
                         </form>
                       ) : null}
                     </div>
+                    <RowActions
+                      resource="fault"
+                      tenantId={session.tenantId}
+                      id={j.id as string}
+                      name={`${j.ref} — ${j.title}`}
+                      values={j as unknown as Record<string, unknown>}
+                    />
                   </div>
                 ))}
 

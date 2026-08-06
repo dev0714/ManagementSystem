@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { Dot, KpiRow, SectionCard, StatusPill, WhatsAppPreview } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { toneOf, zar } from '@/lib/format';
@@ -99,6 +100,8 @@ export default async function InvoicingPage() {
     <div className="page">
       <KpiRow kpis={board} columns={4} />
 
+      <AddRecord resource="invoice" tenantId={session.tenantId} />
+
       <SectionCard title="Invoicing run" subtitle="Issued on the 25th, collected on the 1st" flush>
         <div className="table__scroll">
           <table className="table">
@@ -110,6 +113,7 @@ export default async function InvoicingPage() {
                 <th>Due</th>
                 <th>Method</th>
                 <th>Status</th>
+                <th />
                 <th />
               </tr>
             </thead>
@@ -144,11 +148,20 @@ export default async function InvoicingPage() {
                       ) : null}
                     </div>
                   </td>
+                  <td>
+                    <RowActions
+                      resource="invoice"
+                      tenantId={session.tenantId}
+                      id={i.id as string}
+                      name={`${i.tenant_name} — ${i.property_label}`}
+                      values={i as unknown as Record<string, unknown>}
+                    />
+                  </td>
                 </tr>
               ))}
               {!invoices.length ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <div className="empty">No invoices raised.</div>
                   </td>
                 </tr>

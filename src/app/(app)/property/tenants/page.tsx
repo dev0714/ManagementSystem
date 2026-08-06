@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Avatar, FieldTile, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { toneOf } from '@/lib/format';
@@ -14,7 +15,7 @@ export default async function TenantsPage({ searchParams }: { searchParams: Prom
 
   const { data } = await client
     .from('property_tenants')
-    .select('id, name, initials, phone, property_label, area, lease_end, account, tone, since_label, fields')
+    .select('id, name, initials, phone, property_id, property_label, area, lease_end, account, tone, since_label, fields')
     .eq('tenant_id', session.tenantId)
     .order('name');
 
@@ -34,6 +35,8 @@ export default async function TenantsPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="page">
+      <AddRecord resource="property_tenant" tenantId={session.tenantId} label="tenant" />
+
       <div className="grid grid--main">
         <SectionCard title="Tenants" subtitle={`${tenants.length} in this workspace`} flush>
           <div className="table__scroll">
@@ -44,6 +47,7 @@ export default async function TenantsPage({ searchParams }: { searchParams: Prom
                   <th>Property</th>
                   <th>Lease ends</th>
                   <th>Account</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -65,11 +69,20 @@ export default async function TenantsPage({ searchParams }: { searchParams: Prom
                     <td>
                       <StatusPill tone={toneOf(t.tone)}>{t.account as string}</StatusPill>
                     </td>
+                    <td>
+                      <RowActions
+                        resource="property_tenant"
+                        tenantId={session.tenantId}
+                        id={t.id as string}
+                        name={t.name as string}
+                        values={t as unknown as Record<string, unknown>}
+                      />
+                    </td>
                   </tr>
                 ))}
                 {!tenants.length ? (
                   <tr>
-                    <td colSpan={4}>
+                    <td colSpan={5}>
                       <div className="empty">No tenants yet.</div>
                     </td>
                   </tr>

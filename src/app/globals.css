@@ -1171,3 +1171,49 @@ button {
   color: #15803d;
   border: 1px solid #bfe8cd;
 }
+
+/* ============================ CRUD forms ============================ */
+
+select.input,
+textarea.input {
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--text-strong);
+}
+select.input {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-meta) 50%),
+    linear-gradient(135deg, var(--text-meta) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
+}
+textarea.input {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details > summary:hover {
+  text-decoration: underline;
+}
+details[open] > summary {
+  margin-bottom: 2px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.toolbar > details {
+  flex: none;
+}
+
+.table td .row > details {
+  position: relative;
+}

@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { toneOf } from '@/lib/format';
@@ -63,7 +64,7 @@ export default async function JkRepairsPage() {
   const [openJobs, closedJobs, assets] = await Promise.all([
     client
       .from('maintenance_jobs')
-      .select('ref, fault, repeat_flag, site_label, owner, age_label, sla_label, tone')
+      .select('id, ref, fault, repeat_flag, site_label, owner, age_label, sla_label, tone, status')
       .eq('tenant_id', t)
       .eq('status', 'open')
       .order('created_at'),
@@ -74,11 +75,13 @@ export default async function JkRepairsPage() {
       .eq('status', 'closed')
       .order('created_at', { ascending: false })
       .limit(8),
-    client.from('asset_reviews').select('name, site_label, fails').eq('tenant_id', t).order('sort_order'),
+    client.from('asset_reviews').select('id, name, site_label, fails, sort_order').eq('tenant_id', t).order('sort_order'),
   ]);
 
   return (
     <div className="page">
+      <AddRecord resource="jk_job" tenantId={session.tenantId} label="repair job" />
+
       <SectionCard title="Repair queue" subtitle="48-hour SLA from the moment a job opens" flush>
         <div className="table__scroll">
           <table className="table">
@@ -90,6 +93,7 @@ export default async function JkRepairsPage() {
                 <th>Owner</th>
                 <th>Age</th>
                 <th>SLA</th>
+                <th />
                 <th />
               </tr>
             </thead>
@@ -129,11 +133,20 @@ export default async function JkRepairsPage() {
                       </form>
                     </div>
                   </td>
+                  <td>
+                    <RowActions
+                      resource="jk_job"
+                      tenantId={session.tenantId}
+                      id={j.id as string}
+                      name={j.fault as string}
+                      values={j as unknown as Record<string, unknown>}
+                    />
+                  </td>
                 </tr>
               ))}
               {!(openJobs.data ?? []).length ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <div className="empty">The repair queue is clear.</div>
                   </td>
                 </tr>
@@ -159,6 +172,9 @@ export default async function JkRepairsPage() {
         </SectionCard>
 
         <SectionCard title="Assets under review" subtitle="Three failures in 30 days triggers a review">
+          <div style={{ marginBottom: 14 }}>
+            <AddRecord resource="asset_review" tenantId={session.tenantId} label="asset" />
+          </div>
           <div className="stack">
             {(assets.data ?? []).map((a, i) => (
               <div className="row" key={i}>
@@ -167,6 +183,13 @@ export default async function JkRepairsPage() {
                   <div className="muted">{a.site_label as string}</div>
                 </div>
                 <StatusPill tone="warn">{a.fails as string}</StatusPill>
+                <RowActions
+                  resource="asset_review"
+                  tenantId={session.tenantId}
+                  id={a.id as string}
+                  name={a.name as string}
+                  values={a as unknown as Record<string, unknown>}
+                />
               </div>
             ))}
           </div>

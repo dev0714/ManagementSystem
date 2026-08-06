@@ -149,9 +149,35 @@ Cellular Citi account to see the two workspaces side by side.
 
 ---
 
-## What is wired to real data
+## Creating, editing and deleting
 
-Not just rendering — these write back to Postgres:
+Every list screen has an **＋ Add** panel and per-row **Edit** / **Delete**.
+Covered: contacts and their detail fields, deals, tasks, users, module access,
+sites, repair jobs, stock, assets under review, vehicles, drivers, incidents,
+expense claims, expiries, fleet events, fleet documents, checklist templates
+and their items, properties, tenants, leases, invoices and fault jobs.
+
+All of it runs through one registry (`src/lib/crud.ts`) and two server actions
+(`src/app/(app)/crud-actions.ts`). The client only ever submits a resource
+*key* — the table, the writable column list and the permission rule are all
+resolved server-side, so a forged form cannot reach a table or column that is
+not declared. Every statement carries the session's `tenant_id`, and each
+change writes an `activity_events` row.
+
+Two details worth knowing:
+
+- Passwords set through the user form are bcrypt-hashed in the action and
+  never stored or echoed in the clear. Blank on edit leaves the password alone.
+- A blank optional input means "use the column default" on create and "leave
+  unchanged" on edit. Only columns marked `nullable` in the registry can be
+  cleared to NULL — that distinction is what keeps the schema's NOT NULL
+  constraints intact.
+
+---
+
+## What else is wired to real data
+
+Beyond CRUD, these workflow actions write back to Postgres:
 
 - **Cleaner shift flow** — GPS clock-in → uniform selfie → pass/fail readiness
   checklist. A failed item inserts a `maintenance_jobs` row for HQ Repairs and
@@ -205,15 +231,19 @@ boundaries, tenant isolation, and the write paths.
 
 ```bash
 npm run build && npm run start   # terminal 1
-npm run test:e2e                 # terminal 2
+npm run test:e2e                 # terminal 2 — screens, roles, isolation
+npm run test:crud                # terminal 2 — create/edit/delete + write permissions
 ```
 
 It reads `.env.local` for the Supabase credentials (used only to reset the
 cleaner's shift to step 0 before exercising that flow) and honours
 `E2E_BASE_URL` and `CHROMIUM_PATH`.
 
-Last run: 61 checks, all passing — including that a cleaner typing `/fleet`,
-`/admin/users` or `/` is redirected to their own workspace, that a tenant
-cannot reach `/property/invoicing` or `/jk`, that a driver cannot reach the
-vehicle list, and that an Atlas Facilities user cannot see any Cellular Citi
-record through any screen or through search.
+Last run: 61 + 15 checks, all passing — including that a cleaner typing
+`/fleet`, `/admin/users` or `/` is redirected to their own workspace, that a
+tenant cannot reach `/property/invoicing` or `/jk`, that a driver cannot reach
+the vehicle list, that an Atlas Facilities user cannot see any Cellular Citi
+record through any screen or through search, that a record created in one
+workspace lands in that workspace, that a required field left blank is
+rejected server-side and nothing is written, and that a user created through
+the admin screen can then sign in with a bcrypt-hashed password.

@@ -1,4 +1,5 @@
 import { Dot, KpiRow, ProgressBar, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { toneOf } from '@/lib/format';
@@ -23,7 +24,7 @@ export default async function JkOperationsPage() {
   const [board, chart, stock, jobs, rules, template] = await Promise.all([
     kpis(t, 'jk_ops'),
     client.from('prayer_compliance').select('prayer, on_time_pct, late_pct').eq('tenant_id', t).order('sort_order'),
-    client.from('stock_items').select('name, level_pct, note').eq('tenant_id', t).order('sort_order'),
+    client.from('stock_items').select('id, name, level_pct, note, sort_order').eq('tenant_id', t).order('sort_order'),
     client
       .from('maintenance_jobs')
       .select('ref, fault, repeat_flag, site_label, owner, age_label, sla_label, tone')
@@ -38,7 +39,7 @@ export default async function JkOperationsPage() {
     ? (
         await client
           .from('checklist_items')
-          .select('label, kind, required')
+          .select('id, label, kind, required, sort_order, template_id')
           .eq('tenant_id', t)
           .eq('template_id', template.data.id as string)
           .order('sort_order')
@@ -89,6 +90,9 @@ export default async function JkOperationsPage() {
         </SectionCard>
 
         <SectionCard title="Stock levels" subtitle="Reorder triggers at 15%">
+          <div style={{ marginBottom: 14 }}>
+            <AddRecord resource="stock_item" tenantId={session.tenantId} label="stock item" />
+          </div>
           <div className="stack" style={{ gap: 14 }}>
             {(stock.data ?? []).map((s) => {
               const pct = s.level_pct as number;
@@ -101,8 +105,17 @@ export default async function JkOperationsPage() {
                     <span className="num strong">{pct}%</span>
                   </div>
                   <ProgressBar pct={pct} color={color} />
-                  <div className="muted" style={{ marginTop: 5 }}>
-                    {s.note as string}
+                  <div className="row" style={{ marginTop: 5 }}>
+                    <span className="muted" style={{ flex: 1 }}>
+                      {s.note as string}
+                    </span>
+                    <RowActions
+                      resource="stock_item"
+                      tenantId={session.tenantId}
+                      id={s.id as string}
+                      name={s.name as string}
+                      values={s as unknown as Record<string, unknown>}
+                    />
                   </div>
                 </div>
               );
@@ -151,6 +164,15 @@ export default async function JkOperationsPage() {
 
       <div className="grid grid--main">
         <SectionCard title={`Checklist template — ${template.data?.name ?? 'Salaah readiness'}`} subtitle={template.data?.scope as string}>
+          <div className="stack" style={{ marginBottom: 14 }}>
+            <AddRecord
+              resource="checklist_item_jk"
+              tenantId={session.tenantId}
+              label="checklist item"
+              defaults={{ template_id: template.data?.id, kind: 'Pass / fail', required: true }}
+            />
+            <AddRecord resource="checklist_template_jk" tenantId={session.tenantId} label="template" />
+          </div>
           <div className="stack">
             {items.map((i, idx) => (
               <div className="row" key={idx}>
@@ -159,6 +181,13 @@ export default async function JkOperationsPage() {
                 </span>
                 <span className="pill tone-grey">{i.kind as string}</span>
                 <StatusPill tone={i.required ? 'info' : 'grey'}>{i.required ? 'Required' : 'Optional'}</StatusPill>
+                <RowActions
+                  resource="checklist_item_jk"
+                  tenantId={session.tenantId}
+                  id={i.id as string}
+                  name={i.label as string}
+                  values={i as unknown as Record<string, unknown>}
+                />
               </div>
             ))}
           </div>

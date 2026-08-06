@@ -1,4 +1,5 @@
 import { FilterChips, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { toneOf, zar } from '@/lib/format';
@@ -15,7 +16,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
 
   let query = client
     .from('properties')
-    .select('id, icon, address, area, rent, lease_label, occupancy, status, tone')
+    .select('id, icon, address, area, province, city, suburb, rent, lease_label, occupancy, status, tone')
     .eq('tenant_id', session.tenantId)
     .order('address');
 
@@ -39,6 +40,8 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
         <div className="spacer" />
         <span className="muted">{properties.length} properties</span>
       </div>
+
+      <AddRecord resource="property" tenantId={session.tenantId} />
 
       <div className="grid grid--3">
         {properties.map((p) => {
@@ -87,6 +90,16 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
                     <div className="tile__label">Open faults</div>
                     <div className={`tile__value ${openFaults ? 'text-bad' : ''}`}>{openFaults || 'None'}</div>
                   </div>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <RowActions
+                    resource="property"
+                    tenantId={session.tenantId}
+                    id={p.id as string}
+                    name={p.address as string}
+                    values={p as unknown as Record<string, unknown>}
+                  />
                 </div>
               </div>
             </div>

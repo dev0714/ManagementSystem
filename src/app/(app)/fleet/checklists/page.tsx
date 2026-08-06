@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 
@@ -25,7 +26,7 @@ export default async function FleetChecklistsPage({ searchParams }: { searchPara
   const { data: items } = activeId
     ? await client
         .from('checklist_items')
-        .select('id, label, kind, required')
+        .select('id, label, kind, required, sort_order, template_id')
         .eq('tenant_id', session.tenantId)
         .eq('template_id', activeId)
         .order('sort_order')
@@ -35,6 +36,9 @@ export default async function FleetChecklistsPage({ searchParams }: { searchPara
     <div className="page">
       <div className="grid" style={{ gridTemplateColumns: '260px 1fr', alignItems: 'start' }}>
         <SectionCard title="Templates">
+          <div style={{ marginBottom: 12 }}>
+            <AddRecord resource="checklist_template_fleet" tenantId={session.tenantId} label="template" />
+          </div>
           <div className="stack" style={{ gap: 4 }}>
             {list.map((t) => (
               <Link
@@ -56,6 +60,16 @@ export default async function FleetChecklistsPage({ searchParams }: { searchPara
         <SectionCard
           title={(active?.name as string) ?? 'Checklist'}
           subtitle={`Applies to ${(active?.scope as string) ?? '—'} · ${(items ?? []).length} items`}
+          action={
+            activeId ? (
+              <AddRecord
+                resource="checklist_item_fleet"
+                tenantId={session.tenantId}
+                label="item"
+                defaults={{ template_id: activeId, kind: 'Pass / fail', required: true }}
+              />
+            ) : null
+          }
           flush
         >
           <div className="table__scroll">
@@ -65,6 +79,7 @@ export default async function FleetChecklistsPage({ searchParams }: { searchPara
                   <th>Item</th>
                   <th>Response type</th>
                   <th>Requirement</th>
+                <th />
                 </tr>
               </thead>
               <tbody>
@@ -77,11 +92,20 @@ export default async function FleetChecklistsPage({ searchParams }: { searchPara
                     <td>
                       <StatusPill tone={i.required ? 'info' : 'grey'}>{i.required ? 'Required' : 'Optional'}</StatusPill>
                     </td>
+                    <td>
+                      <RowActions
+                        resource="checklist_item_fleet"
+                        tenantId={session.tenantId}
+                        id={i.id as string}
+                        name={i.label as string}
+                        values={i as unknown as Record<string, unknown>}
+                      />
+                    </td>
                   </tr>
                 ))}
                 {!(items ?? []).length ? (
                   <tr>
-                    <td colSpan={3}>
+                    <td colSpan={4}>
                       <div className="empty">This template has no items yet.</div>
                     </td>
                   </tr>

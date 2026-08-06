@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { KpiRow, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { toneOf, zar } from '@/lib/format';
@@ -59,6 +60,8 @@ export default async function ClaimsPage() {
     <div className="page">
       <KpiRow kpis={board} columns={4} />
 
+      <AddRecord resource="claim" tenantId={session.tenantId} label="expense claim" />
+
       <SectionCard
         title="Expense claims"
         subtitle={claims[0]?.period_label ? `Week ${claims[0].period_label}` : 'This week'}
@@ -75,6 +78,7 @@ export default async function ClaimsPage() {
                 <th>Toll</th>
                 <th>Total</th>
                 <th>Status</th>
+                <th />
                 <th />
               </tr>
             </thead>
@@ -115,12 +119,21 @@ export default async function ClaimsPage() {
                         </div>
                       )}
                     </td>
+                    <td>
+                      <RowActions
+                        resource="claim"
+                        tenantId={session.tenantId}
+                        id={c.id as string}
+                        name={c.driver_name as string}
+                        values={c as unknown as Record<string, unknown>}
+                      />
+                    </td>
                   </tr>
                 );
               })}
               {!claims.length ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={9}>
                     <div className="empty">No claims submitted this week.</div>
                   </td>
                 </tr>

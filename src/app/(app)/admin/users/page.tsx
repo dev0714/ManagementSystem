@@ -1,4 +1,5 @@
 import { Avatar, KpiRow, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireSuperAdmin } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { SOURCE_LABEL, relative } from '@/lib/format';
@@ -31,7 +32,7 @@ export default async function UsersPage() {
       .select('id, name, email, initials, title, is_super_admin, has_crm, is_active, temp_access_until, last_active_at')
       .eq('tenant_id', session.tenantId)
       .order('created_at'),
-    client.from('user_modules').select('user_id, module, role').eq('tenant_id', session.tenantId),
+    client.from('user_modules').select('id, user_id, module, role').eq('tenant_id', session.tenantId),
   ]);
 
   const users = (usersRes.data ?? []) as Row[];
@@ -64,6 +65,11 @@ export default async function UsersPage() {
     <div className="page">
       <KpiRow kpis={board} columns={4} />
 
+      <div className="grid grid--2" style={{ alignItems: 'start' }}>
+        <AddRecord resource="user" tenantId={session.tenantId} />
+        <AddRecord resource="user_module" tenantId={session.tenantId} label="module access" />
+      </div>
+
       <SectionCard
         title="Users & access"
         subtitle={`${users.length} people in ${session.tenant.name} · workspace-scoped`}
@@ -78,6 +84,7 @@ export default async function UsersPage() {
                 <th>Systems</th>
                 <th>Last active</th>
                 <th>Status</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -110,9 +117,63 @@ export default async function UsersPage() {
                     <td>
                       <StatusPill tone={s.tone}>{s.label}</StatusPill>
                     </td>
+                    <td>
+                      <RowActions
+                        resource="user"
+                        tenantId={session.tenantId}
+                        id={u.id}
+                        name={u.name}
+                        values={u as unknown as Record<string, unknown>}
+                      />
+                    </td>
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Module access" subtitle="One row per user per module" flush>
+        <div className="table__scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Module</th>
+                <th>Role</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {mods.map((m) => {
+                const user = users.find((u) => u.id === m.user_id);
+                return (
+                  <tr key={m.id as string}>
+                    <td className="strong">{user?.name ?? '—'}</td>
+                    <td>
+                      <span className={`chip src-${m.module as SourceSlug}`}>{SOURCE_LABEL[m.module as SourceSlug]}</span>
+                    </td>
+                    <td>{m.role as string}</td>
+                    <td>
+                      <RowActions
+                        resource="user_module"
+                        tenantId={session.tenantId}
+                        id={m.id as string}
+                        name={`${user?.name ?? ''} · ${m.role}`}
+                        values={m as unknown as Record<string, unknown>}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+              {!mods.length ? (
+                <tr>
+                  <td colSpan={4}>
+                    <div className="empty">Nobody has module access yet.</div>
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>

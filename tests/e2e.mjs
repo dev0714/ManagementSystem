@@ -48,6 +48,25 @@ const browser = await chromium.launch(
   process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {},
 );
 
+/** Wait for a server action to commit, then re-read the page from the server. */
+async function settle(page) {
+  await page.waitForTimeout(1800);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(400);
+}
+
+/** Poll the rendered page until `needle` appears (case-insensitive). */
+async function waitForText(page, needle, timeout = 15000) {
+  const target = needle.toLowerCase();
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if ((await page.innerText('body')).toLowerCase().includes(target)) return true;
+    await page.waitForTimeout(700);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+  }
+  return (await page.innerText('body')).toLowerCase().includes(target);
+}
+
 async function session(email, password = PASSWORD) {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
@@ -109,13 +128,13 @@ async function session(email, password = PASSWORD) {
 
   // Task toggle actually mutates
   await page.goto(`${BASE}/activity`, { waitUntil: 'domcontentloaded' });
-  const before = (await page.innerText('body')).toLowerCase();
+  const wasTicked = (await page.locator('button.checkrow[data-checked="true"]:has-text("Approve PO-2291")').count()) > 0;
   await page.click('text=Approve PO-2291');
-  await page.waitForTimeout(900);
-  const after = (await page.innerText('body')).toLowerCase();
-  check('ticking a task persists', before !== after);
+  await settle(page);
+  const nowTicked = (await page.locator('button.checkrow[data-checked="true"]:has-text("Approve PO-2291")').count()) > 0;
+  check('ticking a task persists', wasTicked !== nowTicked, `${wasTicked} -> ${nowTicked}`);
   await page.click('text=Approve PO-2291'); // revert
-  await page.waitForTimeout(900);
+  await settle(page);
 
   await ctx.close();
 }
@@ -203,9 +222,9 @@ async function session(email, password = PASSWORD) {
   await page.click('label:has-text("Electrical")');
   await page.fill('#title', marker);
   await page.click('button:has-text("Log the fault")');
-  await page.waitForTimeout(900);
+  const listed = await waitForText(page, marker);
   body = (await page.innerText('body')).toLowerCase();
-  check('tenant fault appears in their open jobs', body.includes(marker.toLowerCase()));
+  check('tenant fault appears in their open jobs', listed);
   check('fault auto-dispatched to the electrical contractor', body.includes('volt masters'));
   await ctx.close();
 
@@ -231,7 +250,7 @@ async function session(email, password = PASSWORD) {
   if (body.includes('log start of day')) {
     await page.fill('#odometer', '128999');
     await page.click('button:has-text("Log start of day")');
-    await page.waitForTimeout(900);
+    await waitForText(page, 'start of day logged');
     body = (await page.innerText('body')).toLowerCase();
   }
   check('start-of-day log records the odometer', body.includes('start of day logged') || body.includes('128 999'));
@@ -242,14 +261,16 @@ async function session(email, password = PASSWORD) {
 {
   const { ctx, page } = await session('derek@cellularciti.co.za');
   check('line manager lands on claims', new URL(page.url()).pathname === '/fleet/claims', page.url());
-  const before = (await page.innerText('body')).toLowerCase();
+  const countApproved = async () =>
+    ((await page.innerText('body')).toLowerCase().match(/approved/g) ?? []).length;
+  const before = await countApproved();
   const approve = page.locator('button:has-text("Approve")').first();
   if (await approve.count()) {
     await approve.click();
-    await page.waitForTimeout(900);
+    await settle(page);
   }
-  const after = (await page.innerText('body')).toLowerCase();
-  check('approving a claim changes its status', before !== after);
+  const after = await countApproved();
+  check('approving a claim changes its status', after > before, `${before} -> ${after}`);
   await ctx.close();
 }
 

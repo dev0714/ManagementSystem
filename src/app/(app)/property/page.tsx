@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { Dot, FlagCard, KpiRow, SectionCard, StatusPill } from '@/components/ui';
+import { AddRecord, RowActions } from '@/components/ui/Crud';
 import { requireModule } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { SEVERITY_DOT, relative, toneOf } from '@/lib/format';
@@ -27,7 +28,7 @@ export default async function PropertyDashboardPage() {
       .is('resolved_at', null)
       .order('created_at', { ascending: false })
       .limit(4),
-    client.from('leases').select('tenant_name, property_label, ends_label, status, tone').eq('tenant_id', t).order('created_at'),
+    client.from('leases').select('id, tenant_name, property_label, starts_label, ends_label, rent, status, tone').eq('tenant_id', t).order('created_at'),
     client
       .from('activity_events')
       .select('id, severity, title, who, occurred_at')
@@ -101,7 +102,12 @@ export default async function PropertyDashboardPage() {
       </div>
 
       <div className="grid grid--main">
-        <SectionCard title="Expiring leases" subtitle="Renewal offers go out 60 days before the end date" flush>
+        <SectionCard
+          title="Expiring leases"
+          subtitle="Renewal offers go out 60 days before the end date"
+          action={<AddRecord resource="lease" tenantId={session.tenantId} label="lease" />}
+          flush
+        >
           <div className="table__scroll">
             <table className="table">
               <thead>
@@ -110,6 +116,7 @@ export default async function PropertyDashboardPage() {
                   <th>Property</th>
                   <th>Lease ends</th>
                   <th>Status</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -121,11 +128,20 @@ export default async function PropertyDashboardPage() {
                     <td>
                       <StatusPill tone={toneOf(l.tone)}>{l.status as string}</StatusPill>
                     </td>
+                    <td>
+                      <RowActions
+                        resource="lease"
+                        tenantId={session.tenantId}
+                        id={l.id as string}
+                        name={`${l.tenant_name} — ${l.property_label}`}
+                        values={l as unknown as Record<string, unknown>}
+                      />
+                    </td>
                   </tr>
                 ))}
                 {!(leases.data ?? []).length ? (
                   <tr>
-                    <td colSpan={4}>
+                    <td colSpan={5}>
                       <div className="empty">No leases due for renewal.</div>
                     </td>
                   </tr>
