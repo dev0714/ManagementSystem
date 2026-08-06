@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import bcrypt from 'bcryptjs';
@@ -11,8 +11,17 @@ import type { Membership, ModuleRole, ModuleSlug, Session, Tenant, Tone } from '
 export const SESSION_COOKIE = 'ms_session';
 const SESSION_DAYS = 7;
 
+/**
+ * Session tokens are stored as an HMAC keyed by SESSION_SECRET, never in the
+ * clear. The token itself is already 256 bits of randomness; the secret means
+ * a stolen copy of the sessions table is useless without the app's own key.
+ */
 function hashToken(token: string) {
-  return createHash('sha256').update(token).digest('hex');
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('SESSION_SECRET must be set to at least 32 characters.');
+  }
+  return createHmac('sha256', secret).update(token).digest('hex');
 }
 
 type UserRow = {
