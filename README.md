@@ -195,3 +195,25 @@ scripts/set-password.mjs
 Design tokens from the handoff live in `src/app/globals.css` — primary
 `#007BFF`, navy `#0A2540`, page `#F1F4F8`, Open Sans, ZAR formatted `R 12 400`,
 24-hour times, tabular numerals on numeric columns.
+
+---
+
+## Tests
+
+An end-to-end suite drives the real UI in Chromium — sign-in, permission
+boundaries, tenant isolation, and the write paths.
+
+```bash
+npm run build && npm run start   # terminal 1
+npm run test:e2e                 # terminal 2
+```
+
+It reads `.env.local` for the Supabase credentials (used only to reset the
+cleaner's shift to step 0 before exercising that flow) and honours
+`E2E_BASE_URL` and `CHROMIUM_PATH`.
+
+Last run: 61 checks, all passing — including that a cleaner typing `/fleet`,
+`/admin/users` or `/` is redirected to their own workspace, that a tenant
+cannot reach `/property/invoicing` or `/jk`, that a driver cannot reach the
+vehicle list, and that an Atlas Facilities user cannot see any Cellular Citi
+record through any screen or through search.
